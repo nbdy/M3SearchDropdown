@@ -37,7 +37,7 @@ fun <EntityType: ISearchableEntity, ModelType: ISearchableViewModel<EntityType>>
 
     ExposedDropdownMenuBox(
         expanded = expanded,
-        onExpandedChange = { expanded = !expanded }
+        onExpandedChange = { expanded = !expanded },
     ) {
         TextField(
             value = currentValue,
@@ -81,8 +81,7 @@ fun <EntityType: ISearchableEntity, ModelType: ISearchableViewModel<EntityType>>
                         currentValue = TextFieldValue(tmp, TextRange(tmp.length))
                         expanded = false
                     },
-                    text = { Text(it.getValue()) },
-                    modifier = Modifier.fillMaxWidth()
+                    text = { Text(it.getValue()) }
                 )
             }
         }
