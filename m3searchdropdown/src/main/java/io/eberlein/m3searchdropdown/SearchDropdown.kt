@@ -1,14 +1,10 @@
 package io.eberlein.m3searchdropdown
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -24,15 +20,17 @@ import androidx.compose.ui.text.input.TextFieldValue
 
 @ExperimentalMaterial3Api
 @Composable
-fun <EntityType: ISearchableEntity, ModelType: ISearchableViewModel<EntityType>> SearchDropdown(
+fun <EntityType> SearchDropdown(
     label: String,
-    model: ModelType,
-    value: String = "",
-    enableAddButton: Boolean = false,
-    onAddButtonClicked: (String) -> Unit = {}
+    onItemSelected: (EntityType) -> String,
+    trailingIcon: @Composable (Boolean) -> Unit = {
+        ExposedDropdownMenuDefaults.TrailingIcon(it)
+    },
+    searchFunction: (String, (List<EntityType>) -> Unit) -> Unit,
+    dropdownItemContent: @Composable (EntityType) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    var currentValue by remember { mutableStateOf(TextFieldValue(value)) }
+    var currentValue by remember { mutableStateOf(TextFieldValue("")) }
     var options = remember { mutableStateListOf<EntityType>() }
 
     ExposedDropdownMenuBox(
@@ -43,29 +41,13 @@ fun <EntityType: ISearchableEntity, ModelType: ISearchableViewModel<EntityType>>
             value = currentValue,
             onValueChange = { newValue ->
                 currentValue = newValue
-                model.search(newValue.text) {
+                searchFunction(newValue.text) {
                     options = it.toMutableStateList()
                     expanded = true
                 }
             },
             label = { Text(label) },
-            trailingIcon = {
-                if (enableAddButton) {
-                    if (currentValue.text.isNotEmpty()) {
-                        if (options.isEmpty()) {
-                            Icon(
-                                Icons.Filled.Add,
-                                null,
-                                modifier = Modifier.clickable { onAddButtonClicked(currentValue.text) }
-                            )
-                        } else {
-                            ExposedDropdownMenuDefaults.TrailingIcon(expanded)
-                        }
-                    }
-                } else {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded)
-                }
-            },
+            trailingIcon = { trailingIcon(expanded) },
             modifier = Modifier.fillMaxWidth().menuAnchor(),
             colors = ExposedDropdownMenuDefaults.textFieldColors()
         )
@@ -77,11 +59,11 @@ fun <EntityType: ISearchableEntity, ModelType: ISearchableViewModel<EntityType>>
             options.forEach {
                 DropdownMenuItem(
                     onClick = {
-                        val tmp = it.getValue()
+                        val tmp = onItemSelected(it)
                         currentValue = TextFieldValue(tmp, TextRange(tmp.length))
                         expanded = false
                     },
-                    text = { Text(it.getValue()) }
+                    text = { dropdownItemContent(it) }
                 )
             }
         }

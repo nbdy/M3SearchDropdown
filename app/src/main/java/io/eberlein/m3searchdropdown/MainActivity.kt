@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,14 +51,12 @@ class MainActivity : ComponentActivity() {
 @Entity(tableName = "contacts")
 data class ContactEntity(
     @PrimaryKey @ColumnInfo(name = "name") var name: String,
-): ISearchableEntity {
-    override fun getValue(): String = name
-}
+)
 
 @Dao
 interface ContactDao {
     @Query("SELECT * FROM contacts WHERE name LIKE '%' || :name || '%'")
-    suspend fun searchByName(name: String): List<ContactEntity>
+    suspend fun findByName(name: String): List<ContactEntity>
 
     @Insert
     suspend fun add(contact: ContactEntity)
@@ -92,7 +91,7 @@ class ModelModule {
 @HiltViewModel
 class ContactViewModel @Inject constructor(
     private val contacts: ContactDao
-) : ViewModel(), ISearchableViewModel<ContactEntity> {
+): ViewModel() {
     init {
         viewModelScope.launch {
             listOf("Andre", "Björn", "Caesar", "David", "Emma", "Fred").forEach {
@@ -101,8 +100,8 @@ class ContactViewModel @Inject constructor(
         }
     }
 
-    override fun search(name: String, cb: (List<ContactEntity>) -> Unit) {
-        viewModelScope.launch { cb(contacts.searchByName(name)) }
+    fun findByName(name: String, cb: (List<ContactEntity>) -> Unit) = viewModelScope.launch {
+        cb(contacts.findByName(name))
     }
 }
 
@@ -119,7 +118,13 @@ fun MainView(
             modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
             contentAlignment = Alignment.TopStart
         ){
-            SearchDropdown(stringResource(R.string.SearchDropdownLabel), model)
+            SearchDropdown<ContactEntity>(
+                stringResource(R.string.SearchDropdownLabel),
+                searchFunction = { text, cb -> model.findByName(text, cb) },
+                onItemSelected = { it.name },
+            ) {
+                Text(it.name)
+            }
         }
     }
 }
