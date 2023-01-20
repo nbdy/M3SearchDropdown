@@ -16,16 +16,20 @@ A simplified example below:
 @Entity(tableName = "MyCustomEntity")
 data class MyCustomEntity(
     @PrimaryKey @ColumnInfo(name = "name") var name: String,
-): ISearchableEntity {
-    override fun getValue(): String = name
+)
+
+@Dao
+interface MyDao {
+    @Query("SELECT * FROM MyCustomEntity WHERE name LIKE '%' || :name || '%'")
+    suspend fun findByName(name: String): List<MyCustomEntity>
 }
 
 @HiltViewModel
 class MyViewModel @Inject constructor(
-    private val dao: MyCustomEntityDAO
-) : ViewModel(), ISearchableViewModel<MyCustomEntity> {
-    override fun search(name: String, cb: (List<MyCustomEntity>) -> Unit) {
-        viewModelScope.launch { cb(dao.searchByName(name)) }
+    private val dao: MyDao
+): ViewModel() {
+    fun findByName(name: String, cb: (List<MyCustomEntity>) -> Unit) = viewModelScope.launch {
+        cb(dao.findByName(name))
     }
 }
 
@@ -40,14 +44,20 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainView(
-    model: ContactViewModel = viewModel()
+    model: MyViewModel = viewModel()
 ) {
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Box(
             modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
             contentAlignment = Alignment.TopStart
         ){
-            SearchDropdown("MyCustomComponentsName", model)
+            SearchDropdown<MyCustomEntity>(
+                stringResource(R.string.SearchDropdownLabel),
+                searchFunction = { text, cb -> model.findByName(text, cb) },
+                onItemSelected = { it.name },
+            ) {
+                Text(it.name)
+            }
         }
     }
 }
