@@ -18,9 +18,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.room.ColumnInfo
 import androidx.room.Dao
+import androidx.room.Database
 import androidx.room.Entity
+import androidx.room.Insert
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.Room
@@ -28,17 +31,15 @@ import androidx.room.RoomDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.eberlein.m3searchdropdown.ui.theme.M3SearchDropdownTheme
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.room.Database
-import androidx.room.Insert
-import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -56,7 +57,7 @@ data class ContactEntity(
 @Dao
 interface ContactDao {
     @Query("SELECT * FROM contacts WHERE name LIKE '%' || :name || '%'")
-    suspend fun findByName(name: String): List<ContactEntity>
+    fun findByName(name: String): Flow<List<ContactEntity>>
 
     @Insert
     suspend fun add(contact: ContactEntity)
@@ -100,9 +101,7 @@ class ContactViewModel @Inject constructor(
         }
     }
 
-    fun findByName(name: String, cb: (List<ContactEntity>) -> Unit) = viewModelScope.launch {
-        cb(contacts.findByName(name))
-    }
+    fun findByName(name: String) = contacts.findByName(name)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -118,9 +117,9 @@ fun MainView(
             modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
             contentAlignment = Alignment.TopStart
         ){
-            SearchDropdown<ContactEntity>(
+            SearchDropdown(
                 stringResource(R.string.SearchDropdownLabel),
-                searchFunction = { text, cb -> model.findByName(text, cb) },
+                searchFunction = { text -> model.findByName(text) },
                 onItemSelected = { it.name },
             ) {
                 Text(it.name)
