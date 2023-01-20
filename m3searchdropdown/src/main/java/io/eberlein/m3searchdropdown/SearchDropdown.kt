@@ -8,15 +8,16 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import kotlinx.coroutines.flow.Flow
+
 
 @ExperimentalMaterial3Api
 @Composable
@@ -26,12 +27,12 @@ fun <EntityType> SearchDropdown(
     trailingIcon: @Composable (Boolean) -> Unit = {
         ExposedDropdownMenuDefaults.TrailingIcon(it)
     },
-    searchFunction: (String, (List<EntityType>) -> Unit) -> Unit,
+    searchFunction: (String) -> Flow<List<EntityType>>,
     dropdownItemContent: @Composable (EntityType) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     var currentValue by remember { mutableStateOf(TextFieldValue("")) }
-    var options = remember { mutableStateListOf<EntityType>() }
+    val options = searchFunction(currentValue.text).collectAsState(initial = emptyList()).value
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -41,14 +42,13 @@ fun <EntityType> SearchDropdown(
             value = currentValue,
             onValueChange = { newValue ->
                 currentValue = newValue
-                searchFunction(newValue.text) {
-                    options = it.toMutableStateList()
-                    expanded = true
-                }
+                expanded = true
             },
             label = { Text(label) },
             trailingIcon = { trailingIcon(expanded) },
-            modifier = Modifier.fillMaxWidth().menuAnchor(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(),
             colors = ExposedDropdownMenuDefaults.textFieldColors()
         )
 
