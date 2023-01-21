@@ -119,6 +119,7 @@ fun MainView(
         ){
             SearchDropdown(
                 stringResource(R.string.SearchDropdownLabel),
+                initialText = "Andre",
                 searchFunction = { text -> model.findByName(text) },
                 onItemSelected = { it.name },
             ) {
