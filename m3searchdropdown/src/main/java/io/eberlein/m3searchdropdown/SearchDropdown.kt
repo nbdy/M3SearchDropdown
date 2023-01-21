@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.Flow
 fun <EntityType> SearchDropdown(
     label: String,
     onItemSelected: (EntityType) -> String,
+    initialText: String = "",
     trailingIcon: @Composable (Boolean) -> Unit = {
         ExposedDropdownMenuDefaults.TrailingIcon(it)
     },
@@ -31,7 +32,7 @@ fun <EntityType> SearchDropdown(
     dropdownItemContent: @Composable (EntityType) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    var currentValue by remember { mutableStateOf(TextFieldValue("")) }
+    var currentValue by remember { mutableStateOf(TextFieldValue(initialText)) }
     val options = searchFunction(currentValue.text).collectAsState(initial = emptyList()).value
 
     ExposedDropdownMenuBox(
